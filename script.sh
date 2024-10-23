@@ -1,54 +1,32 @@
 #!/bin/bash
 
-# Update and upgrade system
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "Please run this script as root."
+    exit 1
+fi
+
+# Run setup-alpine for initial configuration
+setup-alpine
+
+# Update and upgrade the system
 apk update
 apk upgrade
 
-# Enable community repository
-sed -i 's/^#\(.*community\)/\1/' /etc/apk/repositories
+# Enable community repository (setup-desktop does this automatically)
+# sed -i 's/^#\(.*community\)/\1/' /etc/apk/repositories
 
-# Install necessary base packages
-apk add bash bash-completion dbus elogind polkit eudev
+# Run the setup-desktop script and select GNOME
+echo "Running setup-desktop. Please select 'gnome' when prompted."
+setup-desktop gnome
 
-# Install X.Org server and video drivers
-setup-xorg-base
-apk add xf86-video-vesa xf86-video-intel xf86-video-nouveau xf86-video-amdgpu
-
-# Install input drivers
-apk add xf86-input-libinput
-
-# Install GNOME and related packages
-apk add gnome gnome-apps gdm networkmanager
-
-# Install additional useful applications
-apk add firefox-esr gedit gnome-terminal gnome-system-monitor
-
-# Enable necessary services
-rc-update add dbus
-rc-update add elogind
-rc-update add polkit
-rc-update add gdm
-rc-update add networkmanager
-
-# Start services
-rc-service dbus start
-rc-service elogind start
-rc-service polkit start
-rc-service gdm start
-rc-service networkmanager start
-
-# Create a new user (replace 'username' with desired username)
+# Create a new user (replace 'user' with desired username)
 adduser -g "GNOME User" user
 adduser user wheel
 
-# Set up sudo for the new user
-echo '%wheel ALL=(ALL) ALL' > /etc/sudoers.d/wheel
+# Set up doas for user privileges (optional, similar to sudo)
+apk add doas
+echo "permit :wheel" > /etc/doas.d/doas.conf
 
-# Set GNOME as the default session
-echo "[User]" > /var/lib/AccountsService/users/user
-echo "XSession=gnome" >> /var/lib/AccountsService/users/user
-
-# Reboot the system
-echo "Installation complete. Rebooting in 10 seconds..."
-sleep 10
-reboot
+# Reboot the system to apply changes
+echo "Installation complete. Please reboot the system."
